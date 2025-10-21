@@ -1,99 +1,23 @@
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="referrer" content="origin" />
-  <title>Kakao Map - Debug</title>
-  <style>
-    html,body { height:100%; margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;}
-    #map { height:100%; }
-    .notice { position:fixed; left:8px; top:8px; z-index:1000; background:#fff; border:1px solid #eee; border-radius:8px; padding:8px 10px; max-width: 90vw; }
-    .notice b { display:block; margin-bottom:6px; }
-    .error { color:#c00; }
-    .ok { color:#0a0; }
-  </style>
+function searchNearby(center, kw, radius){
+  clearMarkers();
+  emitStatus('🔍 검색 중...');
+  ps.keywordSearch(kw, function(data, status){
+    if (status === kakao.maps.services.Status.OK && data && data.length){
+      const uniq = {}; data.forEach(p => { const k=p.id||(p.x+','+p.y); if(!uniq[k]) uniq[k]=p; });
+      const places = Object.values(uniq);
+      const ms = places.map(addPlaceMarker);
+      clusterer.addMarkers(ms);
+      emitStatus('✅ '+places.length+'개 장소를 찾았습니다');
 
-  <!-- SDK 로드 실패를 잡기 위한 onerror 핸들러 + 캐시 무효화 파라미터 -->
-  <script>
-    window.__kakaoLoadError = null;
-    function onKakaoError(e){ window.__kakaoLoadError = e || true; }
-  </script>
-  <script
-    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d1edc654e39b717ae9109665b63453f6&libraries=services,clusterer&autoload=false&_cb=20251021"
-    onerror="onKakaoError(event)"
-  ></script>
-</head>
-<body>
-  <div class="notice" id="statusBox">
-    <b>상태</b>
-    <div id="status">초기화 중...</div>
-    <div style="margin-top:6px; font-size:12px; color:#666">
-      <div>Origin: <code id="origin"></code></div>
-      <div>Referrer: <code id="referrer"></code></div>
-    </div>
-  </div>
-  <div id="map"></div>
-
-  <script>
-    // 상태 표시 도우미
-    function setStatus(text, ok){
-      var el = document.getElementById('status');
-      el.textContent = text;
-      el.className = ok ? 'ok' : 'error';
+      // 🔔 검색 요약을 Expo/부모로 보내기
+      const c = map.getCenter();
+      postOutbound({ type:'SEARCH_DONE', keyword: kw, count: places.length,
+                     radius: radius||1000, center:{ lat:c.getLat(), lng:c.getLng() }});
+    } else {
+      emitStatus('⚠️ 결과 없음 / status='+status);
+      const c = map.getCenter();
+      postOutbound({ type:'SEARCH_DONE', keyword: kw, count: 0,
+                     radius: radius||1000, center:{ lat:c.getLat(), lng:c.getLng() }});
     }
-    document.getElementById('origin').textContent = location.origin;
-    document.getElementById('referrer').textContent = document.referrer || '(none)';
-
-    // 1) SDK 스크립트 onerror 체크
-    if (window.__kakaoLoadError) {
-      setStatus('❌ SDK 스크립트를 불러오지 못했습니다 (네트워크/차단/URL 문제).', false);
-      throw new Error('Kakao SDK script load error');
-    }
-
-    // 2) 글로벌 kakao 객체 확인
-    if (!window.kakao) {
-      setStatus('❌ window.kakao 가 없습니다. (키/도메인/차단 문제 가능)', false);
-      throw new Error('window.kakao missing');
-    }
-
-    // 3) maps 네임스페이스 지연 로드
-    kakao.maps.load(function(){
-      try {
-        var map = new kakao.maps.Map(document.getElementById('map'), {
-          center: new kakao.maps.LatLng(37.4979,127.0276),
-          level: 5
-        });
-        setStatus('✅ 지도 로드 성공', true);
-
-        // 간단 키워드 검색
-        var ps = new kakao.maps.services.Places();
-        var clusterer = new kakao.maps.MarkerClusterer({ map: map, averageCenter:true, minLevel:6 });
-
-        function add(place){
-          var m = new kakao.maps.Marker({ position: new kakao.maps.LatLng(place.y, place.x) });
-          var info = new kakao.maps.InfoWindow({
-            content: '<div style="padding:8px;min-width:160px"><b>'+place.place_name+
-                     '</b><br><small>'+(place.road_address_name||place.address_name||'')+'</small></div>'
-          });
-          kakao.maps.event.addListener(m, 'click', function(){ info.open(map, m); });
-          clusterer.addMarker(m);
-        }
-
-        ps.keywordSearch('노래방', function(data, status){
-          if (status === kakao.maps.services.Status.OK) {
-            data.forEach(add);
-            setStatus('✅ 장소 검색 성공: ' + data.length + '개', true);
-          } else {
-            setStatus('⚠️ 장소 검색 실패: ' + status, false);
-          }
-        }, { location: map.getCenter(), radius: 3000 });
-
-      } catch (e) {
-        console.error(e);
-        setStatus('❌ 지도 초기화 중 오류 발생: ' + (e.message || e), false);
-      }
-    });
-  </script>
-</body>
-</html>
+  }, { location: center, radius: radius||1000 });
+}
