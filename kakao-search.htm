@@ -207,7 +207,11 @@
       navigator.geolocation.getCurrentPosition(function(pos){
         setOrigin(pos.coords.latitude, pos.coords.longitude);
         map.setLevel(5);
-        const rad=$radius.value, kw=$keyword.value;
+        const rad=$radius.value, kw=($keyword.value||'').trim();
+        if (!kw) {
+          emitStatus('📍 내 위치로 이동 — 키워드를 입력하고 [검색]을 눌러주세요');
+          return; // 키워드 비어 있으면 검색 안 함
+        }
         searchNearby(map.getCenter(), kw, rad);
       }, function(){ emitStatus('⚠️ 위치를 가져오지 못했습니다'); });
     });
