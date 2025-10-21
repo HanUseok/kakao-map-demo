@@ -19,7 +19,10 @@
     window.__kakaoLoadError = null;
     function onKakaoError(e){ window.__kakaoLoadError = e || true; }
   </script>
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d1edc654e39b717ae9109665b63453f6&libraries=services,clusterer&autoload=false&_=${Date.now()}"></script>
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_JAVASCRIPT_KEY&libraries=services,clusterer&autoload=false&_="
+    onerror="onKakaoError(event)"
+  ></script>
 </head>
 <body>
   <div class="notice" id="statusBox">
