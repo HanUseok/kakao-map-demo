@@ -242,15 +242,22 @@
           resolvePlaceAndCenter(o.query, c=>{ if(c && o.autoSearch) searchNearby(c, $('#keyword').value, parseInt($radius.value||'1000',10)); });
         }else if(o.type==='SET_KEYWORD'){ $('#keyword').value=(o.keyword||''); }
         else if(o.type==='SET_RADIUS'){ $radius.value=String(o.radius||1000); }
-        else if(o.type==='SEARCH_NOW'){
-          if (!$('#place').value.trim()) {
-            alert('장소를 입력해주세요'); 
-            emitStatus('⚠️ 장소를 입력해주세요'); 
-          } else { 
-            resolvePlaceAndCenter($('#place').value, c=>{ 
-              if (c) searchNearby(c, $('#keyword').value, parseInt($radius.value||'1000',10)); 
-            }); 
-          } }
+        else if (o.type === 'SEARCH_NOW') {
+          const rad = parseInt($radius.value || '1000', 10);
+          const kw  = ($keyword.value || '').trim();
+          const q   = ($place.value || '').trim();
+          
+          // 장소가 비어 있으면: 현재 지도 중심으로 검색
+          if (!q) {
+            emitStatus('📍 장소 미입력 — 현재 지도 중심으로 검색합니다');
+            searchNearby(map.getCenter(), kw, rad);
+          } else {
+            // 장소가 있으면: 좌표 해석 후 검색
+            resolvePlaceAndCenter(q, c => {
+              if (c) searchNearby(c, kw, rad);
+            });
+          }
+        }
       }catch(e){}
     }
     window.addEventListener('message', e=>handleMsg(e.data));
