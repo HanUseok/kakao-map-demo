@@ -193,11 +193,12 @@
     // 버튼/액션
     $('#btnSearch').addEventListener('click', function(){
       const rad=$radius.value, kw=$keyword.value, q=$place.value;
-      if (q && q.trim()){
-        resolvePlaceAndCenter(q, c=>{ if(c) searchNearby(c, kw, rad); });
-      }else{
-        searchNearby(map.getCenter(), kw, rad);
+      if (!q || !q.trim()) {
+        alert('장소를 입력해주세요');
+        emitStatus('⚠️ 장소를 입력해주세요');
+        return; // 검색 중단
       }
+      resolvePlaceAndCenter(q, c=>{ if(c) searchNearby(c, kw, rad); });
     });
 
     // FAB: 내 위치로 이동 + 즉시 검색
@@ -227,7 +228,15 @@
           resolvePlaceAndCenter(o.query, c=>{ if(c && o.autoSearch) searchNearby(c, $('#keyword').value, parseInt($radius.value||'1000',10)); });
         }else if(o.type==='SET_KEYWORD'){ $('#keyword').value=(o.keyword||''); }
         else if(o.type==='SET_RADIUS'){ $radius.value=String(o.radius||1000); }
-        else if(o.type==='SEARCH_NOW'){ searchNearby(map.getCenter(), $('#keyword').value, parseInt($radius.value||'1000',10)); }
+        else if(o.type==='SEARCH_NOW'){
+          if (!$('#place').value.trim()) {
+            alert('장소를 입력해주세요'); 
+            emitStatus('⚠️ 장소를 입력해주세요'); 
+          } else { 
+            resolvePlaceAndCenter($('#place').value, c=>{ 
+              if (c) searchNearby(c, $('#keyword').value, parseInt($radius.value||'1000',10)); 
+            }); 
+          } }
       }catch(e){}
     }
     window.addEventListener('message', e=>handleMsg(e.data));
