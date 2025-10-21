@@ -227,20 +227,29 @@
 
 
     // FAB: 내 위치로 이동 + 즉시 검색
-    $('#btnMyFab').addEventListener('click', function(){
-      if (!navigator.geolocation) return emitStatus('⚠️ 위치 권한을 사용할 수 없습니다');
-      navigator.geolocation.getCurrentPosition(function(pos){
-        setOrigin(pos.coords.latitude, pos.coords.longitude);
-        map.setLevel(5);
-        const rad=$radius.value, kw=($keyword.value||'').trim();
-        if (!kw) {
-          alert('무엇을? (키워드)을 입력하세요.');
-          emitStatus('⚠️ 키워드가 비어 있습니다');
+      // ✅ 수정 버전: FAB는 '이동'만 하고 키워드 있으면 검색
+      $('#btnMyFab').addEventListener('click', function(){
+        if (!navigator.geolocation) {
+          emitStatus('⚠️ 위치 권한을 사용할 수 없습니다');
           return;
         }
-        searchNearby(map.getCenter(), kw, rad);
-      }, function(){ emitStatus('⚠️ 위치를 가져오지 못했습니다'); });
-    });
+      
+        navigator.geolocation.getCurrentPosition(function(pos){
+          setOrigin(pos.coords.latitude, pos.coords.longitude);
+          map.setLevel(5);
+      
+          const rad = $radius.value;
+          const kw  = ($keyword.value || '').trim();
+      
+          if (kw) {
+            searchNearby(map.getCenter(), kw, rad);
+          } else {
+            emitStatus('📍 내 위치로 이동했습니다 (검색은 생략)');
+          }
+        }, function(){
+          emitStatus('⚠️ 위치를 가져오지 못했습니다');
+        });
+      });
 
     // 지도 클릭: 중심만 이동(자동 검색 X)
     kakao.maps.event.addListener(map, 'click', function(e){
