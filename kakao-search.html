@@ -159,7 +159,12 @@
 
     function searchNearby(center, kw, radius){
       clearMarkers();
-      const keyword = (kw && kw.trim()) ? kw.trim() : '노래방';
+      const keyword = (kw && kw.trim()) ? kw.trim() : '';
+      if (!keyword) {
+        alert('무엇을? (키워드)을 입력하세요.');
+        emitStatus('⚠️ 키워드가 비어 있습니다');
+        return;
+      }
       const rad = Math.min(Math.max(parseInt(radius||'1000',10), 100), 5000);
       emitStatus(`🔍 검색 중... ${keyword} · ${rad}m`);
       ps.keywordSearch(keyword, function(data, status){
@@ -196,18 +201,28 @@
       const q = ($place.value || '').trim();
       const kw = ($keyword.value || '').trim();
 
-    // 장소가 비어 있으면: 현재 지도 중심으로 진행
-    if (!q) {
-      emitStatus('📍 장소 미입력 — 현재 지도 중심으로 검색합니다');
-      searchNearby(map.getCenter(), kw, rad);
+    // 입력 검증 규칙
+    if (!q && !kw) {
+      alert('장소를 입력하세요.');
+      emitStatus('⚠️ 장소와 키워드가 비어 있습니다');
       return;
     }
-
-    // 장소가 있으면: 기존처럼 좌표 해석 후 진행
-    resolvePlaceAndCenter(q, c => {
-      if (!c) return; // 해석 실패 시 종료
-      searchNearby(c, kw, rad);
-    });
+      if (q && !kw) {
+        alert('무엇을? (키워드)을 입력하세요.');
+        emitStatus('⚠️ 키워드가 비어 있습니다');
+        return;
+      }
+      if (!q && kw) {
+        // 키워드만 있을 때: 현재 지도 중심에서 검색
+        emitStatus('📍 장소 미입력 — 현재 지도 중심으로 검색합니다');
+        searchNearby(map.getCenter(), kw, rad);
+        return;
+      }
+      // 장소와 키워드가 모두 있는 정상 케이스
+      resolvePlaceAndCenter(q, c => {
+        if (!c) return; // 해석 실패 시 종료
+        searchNearby(c, kw, rad);
+      });
   });
 
 
@@ -219,8 +234,9 @@
         map.setLevel(5);
         const rad=$radius.value, kw=($keyword.value||'').trim();
         if (!kw) {
-          emitStatus('📍 내 위치로 이동 — 키워드를 입력하고 [검색]을 눌러주세요');
-          return; // 키워드 비어 있으면 검색 안 함
+          alert('무엇을? (키워드)을 입력하세요.');
+          emitStatus('⚠️ 키워드가 비어 있습니다');
+          return;
         }
         searchNearby(map.getCenter(), kw, rad);
       }, function(){ emitStatus('⚠️ 위치를 가져오지 못했습니다'); });
@@ -247,16 +263,25 @@
           const kw  = ($keyword.value || '').trim();
           const q   = ($place.value || '').trim();
           
-          // 장소가 비어 있으면: 현재 지도 중심으로 검색
-          if (!q) {
+          // 동일한 검증 규칙
+          if (!q && !kw) {
+            alert('장소를 입력하세요.');
+            emitStatus('⚠️ 장소와 키워드가 비어 있습니다');
+            return;
+          }
+          if (q && !kw) {
+            alert('무엇을? (키워드)을 입력하세요.');
+            emitStatus('⚠️ 키워드가 비어 있습니다');
+            return;
+          }
+          if (!q && kw) {
             emitStatus('📍 장소 미입력 — 현재 지도 중심으로 검색합니다');
             searchNearby(map.getCenter(), kw, rad);
-          } else {
-            // 장소가 있으면: 좌표 해석 후 검색
-            resolvePlaceAndCenter(q, c => {
-              if (c) searchNearby(c, kw, rad);
-            });
+            return;
           }
+          resolvePlaceAndCenter(q, c => {
+            if (c) searchNearby(c, kw, rad);
+          });
         }
       }catch(e){}
     }
