@@ -192,14 +192,24 @@
 
     // 버튼/액션
     $('#btnSearch').addEventListener('click', function(){
-      const rad=$radius.value, kw=$keyword.value, q=$place.value;
-      if (!q || !q.trim()) {
-        alert('장소를 입력해주세요');
-        emitStatus('⚠️ 장소를 입력해주세요');
-        return; // 검색 중단
-      }
-      resolvePlaceAndCenter(q, c=>{ if(c) searchNearby(c, kw, rad); });
+      const rad = $radius.value;
+      const q = ($place.value || '').trim();
+      const kw = ($keyword.value || '').trim();
+
+    // 장소가 비어 있으면: 현재 지도 중심으로 진행
+    if (!q) {
+      emitStatus('📍 장소 미입력 — 현재 지도 중심으로 검색합니다');
+      searchNearby(map.getCenter(), kw, rad);
+      return;
+    }
+
+    // 장소가 있으면: 기존처럼 좌표 해석 후 진행
+    resolvePlaceAndCenter(q, c => {
+      if (!c) return; // 해석 실패 시 종료
+      searchNearby(c, kw, rad);
     });
+  });
+
 
     // FAB: 내 위치로 이동 + 즉시 검색
     $('#btnMyFab').addEventListener('click', function(){
