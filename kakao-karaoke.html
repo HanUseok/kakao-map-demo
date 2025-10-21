@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kakao Map</title>
+  <style>html,body,#map{height:100%;margin:0}</style>
+  <d1edc654e39b717ae9109665b63453f6>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_JAVASCRIPT_KEY&libraries=services,clusterer&autoload=false"></script>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    if (!window.kakao || !kakao.maps) { alert('Kakao SDK load failed'); throw new Error('Kakao SDK'); }
+    kakao.maps.load(function(){
+      var map = new kakao.maps.Map(document.getElementById('map'), {
+        center: new kakao.maps.LatLng(37.4979,127.0276),
+        level: 5
+      });
+      var ps = new kakao.maps.services.Places();
+      var clusterer = new kakao.maps.MarkerClusterer({ map: map, averageCenter:true, minLevel:6 });
+
+      function add(place){
+        var m = new kakao.maps.Marker({ position: new kakao.maps.LatLng(place.y, place.x) });
+        var info = new kakao.maps.InfoWindow({
+          content: '<div style="padding:8px;min-width:160px"><b>'+place.place_name+
+                   '</b><br><small>'+(place.road_address_name||place.address_name||'')+'</small></div>'
+        });
+        kakao.maps.event.addListener(m, 'click', function(){ info.open(map, m); });
+        clusterer.addMarker(m);
+      }
+
+      function search(q){
+        clusterer.clear();
+        ps.keywordSearch(q || '노래방', function(data, status){
+          if (status === kakao.maps.services.Status.OK) data.forEach(add);
+        }, { location: map.getCenter(), radius: 3000 });
+      }
+
+      search('노래방');
+    });
+  </script>
+</body>
+</html>
